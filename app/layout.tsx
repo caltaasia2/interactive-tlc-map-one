@@ -28,7 +28,7 @@ export default function RootLayout({
       className={cn("font-sans", geist.variable)}
       suppressHydrationWarning
     >
-      <body className="antialiased h-dvh overflow-hidden bg-background flex flex-col">
+      <body className="antialiased fixed inset-0 overflow-hidden bg-background flex flex-col">
         <BridgeProvider />
         <header className="relative shrink-0 z-50 w-full gradient-hero shadow-lg shadow-black/10">
           <div className="container mx-auto px-4 h-14 sm:h-16 flex items-center justify-between">
