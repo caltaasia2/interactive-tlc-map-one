@@ -769,6 +769,10 @@ export default function MapClient({ centers }: MapClientProps) {
   );
   const [showCorridors, setShowCorridors] = useState(true);
   const [showHighways, setShowHighways] = useState(true);
+  const [hiddenCorridors, setHiddenCorridors] = useState<Set<string>>(
+    new Set()
+  );
+  const [showBorderPoints, setShowBorderPoints] = useState(true);
   const [baseMap, setBaseMap] = useState("light");
   const [showDensity, setShowDensity] = useState(false);
   const [showGdp, setShowGdp] = useState(false);
@@ -819,6 +823,91 @@ export default function MapClient({ centers }: MapClientProps) {
       return next;
     });
   };
+
+  const toggleCorridor = (id: string) => {
+    setHiddenCorridors((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const visibleCorridors = transportCorridors.filter(
+    (c) => !hiddenCorridors.has(c.id)
+  );
+
+  const renderCorridorToggles = (showBorderRow: boolean) => (
+    <>
+      {transportCorridors.map((c) => {
+        const on = !hiddenCorridors.has(c.id);
+        return (
+          <button
+            key={c.id}
+            type="button"
+            aria-pressed={on}
+            onClick={() => toggleCorridor(c.id)}
+            className="flex items-center gap-2 w-full text-left text-xs rounded-md px-1 py-0.5 hover:bg-indigo-50/60 transition-colors"
+          >
+            <span
+              className="w-3.5 h-3.5 rounded border-2 flex-shrink-0 transition-all"
+              style={{
+                backgroundColor: on ? c.color : "transparent",
+                borderColor: on ? c.color : "rgba(100,116,139,0.35)",
+              }}
+            />
+            <span
+              className="w-4 h-0.5 rounded flex-shrink-0"
+              style={{ backgroundColor: c.color, opacity: on ? 1 : 0.35 }}
+            />
+            <span
+              className={on ? "text-foreground/80" : "text-muted-foreground/60"}
+            >
+              {c.name}
+            </span>
+          </button>
+        );
+      })}
+      {showBorderRow && (
+        <button
+          type="button"
+          aria-pressed={showBorderPoints}
+          onClick={() => setShowBorderPoints((v) => !v)}
+          className="flex items-center gap-2 w-full text-left text-xs rounded-md px-1 py-0.5 hover:bg-indigo-50/60 transition-colors"
+        >
+          <span
+            className="w-3.5 h-3.5 rounded border-2 flex-shrink-0 transition-all"
+            style={{
+              backgroundColor: showBorderPoints ? "#fbbf24" : "transparent",
+              borderColor: showBorderPoints
+                ? "#d97706"
+                : "rgba(100,116,139,0.35)",
+            }}
+          />
+          <span
+            className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-[10px] font-bold rounded-sm"
+            style={{
+              backgroundColor: "#fbbf24",
+              color: "#78350f",
+              border: "1.5px solid #d97706",
+              opacity: showBorderPoints ? 1 : 0.35,
+            }}
+          >
+            ✦
+          </span>
+          <span
+            className={
+              showBorderPoints
+                ? "text-foreground/80"
+                : "text-muted-foreground/60"
+            }
+          >
+            Пограничные переходы
+          </span>
+        </button>
+      )}
+    </>
+  );
 
   const toggleStatus = (status: string) => {
     setSelectedStatuses((prev) => {
@@ -905,6 +994,13 @@ export default function MapClient({ centers }: MapClientProps) {
     [visibleCenters]
   );
 
+  const visibleCorridorNodes = useMemo(
+    () =>
+      new Map(
+        Array.from(corridorNodes).filter(([id]) => !hiddenCorridors.has(id))
+      ),
+    [corridorNodes, hiddenCorridors]
+  );
   const corridorColorMap = useMemo(
     () => new Map(transportCorridors.map((c) => [c.id, c.color])),
     []
@@ -1087,7 +1183,7 @@ export default function MapClient({ centers }: MapClientProps) {
           ))}
         {showCorridorsEffective && (
           <>
-            {transportCorridors.map((corridor) => (
+            {visibleCorridors.map((corridor) => (
               <Fragment key={corridor.id}>
                 <Polyline
                   positions={corridor.points.map((p) => [p.lat, p.lng])}
@@ -1113,6 +1209,7 @@ export default function MapClient({ centers }: MapClientProps) {
               </Fragment>
             ))}
             {showBorderCrossings &&
+              showBorderPoints &&
               borderCrossings.map((bc) => (
                 <Marker
                   key={bc.id}
@@ -1133,7 +1230,7 @@ export default function MapClient({ centers }: MapClientProps) {
         )}
         {mapMode === "corridor" && (
           <CorridorNodes
-            corridorNodes={corridorNodes}
+            corridorNodes={visibleCorridorNodes}
             corridorColors={corridorColorMap}
           />
         )}
@@ -1380,32 +1477,8 @@ export default function MapClient({ centers }: MapClientProps) {
                 </label>
 
                 {showCorridors && (
-                  <div className="space-y-1.5 pl-6 mb-2">
-                    {transportCorridors.map((c) => (
-                      <div
-                        key={c.id}
-                        className="flex items-center gap-2 text-xs text-muted-foreground"
-                      >
-                        <span
-                          className="w-4 h-0.5 rounded flex-shrink-0"
-                          style={{ backgroundColor: c.color }}
-                        />
-                        <span>{c.name}</span>
-                      </div>
-                    ))}
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-                      <span
-                        className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-[10px] font-bold rounded-sm"
-                        style={{
-                          backgroundColor: "#fbbf24",
-                          color: "#78350f",
-                          border: "1.5px solid #d97706",
-                        }}
-                      >
-                        ✦
-                      </span>
-                      <span>Пограничные переходы</span>
-                    </div>
+                  <div className="space-y-0.5 pl-5 mb-2">
+                    {renderCorridorToggles(true)}
                   </div>
                 )}
 
@@ -1600,33 +1673,7 @@ export default function MapClient({ centers }: MapClientProps) {
                   <p className="text-xs font-semibold text-foreground/70 mb-2">
                     Транспортные оси
                   </p>
-                  {transportCorridors.map((c) => (
-                    <div
-                      key={c.id}
-                      className="flex items-center gap-2 text-xs text-muted-foreground"
-                    >
-                      <span
-                        className="w-4 h-0.5 rounded flex-shrink-0"
-                        style={{ backgroundColor: c.color }}
-                      />
-                      <span>{c.name}</span>
-                    </div>
-                  ))}
-                  {showBorderCrossings && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-                      <span
-                        className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-[10px] font-bold rounded-sm"
-                        style={{
-                          backgroundColor: "#fbbf24",
-                          color: "#78350f",
-                          border: "1.5px solid #d97706",
-                        }}
-                      >
-                        ✦
-                      </span>
-                      <span>Пограничные переходы</span>
-                    </div>
-                  )}
+                  {renderCorridorToggles(showBorderCrossings)}
                 </div>
               </>
             )}
