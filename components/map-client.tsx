@@ -212,76 +212,59 @@ function createBorderIcon() {
   });
 }
 
-function createLabelIcon(name: string, color: string) {
+function plateIcon(
+  className: string,
+  name: string,
+  accent: string,
+  opts: { fontSize?: number; weight?: number; bg?: string; pad?: string } = {}
+) {
+  const { fontSize = 12, weight = 600, bg = "rgba(255,255,255,0.95)", pad = "4px 11px 4px 9px" } = opts;
   return new L.DivIcon({
-    className: "corridor-label",
-    html: `<div style="
-      padding: 2px 10px;
-      background: ${color}e0;
-      color: white;
-      font-size: 11px;
-      font-weight: 700;
-      border-radius: 4px;
-      white-space: nowrap;
-      box-shadow: 0 1px 6px rgba(0,0,0,0.3);
-      border: 1.5px solid rgba(255,255,255,0.9);
-      letter-spacing: 0.02em;
-    ">${name}</div>`,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0],
-  });
-}
-
-function createHighwayLabelIcon(name: string) {
-  return new L.DivIcon({
-    className: "highway-label",
-    html: `<div style="
-      padding: 1px 8px;
-      background: rgba(100,100,110,0.85);
-      color: white;
-      font-size: 10px;
-      font-weight: 600;
-      border-radius: 3px;
-      white-space: nowrap;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
-      border: 1px solid rgba(255,255,255,0.6);
-      letter-spacing: 0.01em;
-    ">${name}</div>`,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0],
-  });
-}
-
-function createAgglomerationIcon(name: string) {
-  return new L.DivIcon({
-    className: "agglomeration-label",
+    className,
     html: `<div style="
       display: inline-flex;
       align-items: center;
       gap: 6px;
       width: max-content;
+      max-width: 260px;
       transform: translate(-50%, -50%);
-      padding: 4px 11px 4px 9px;
-      background: rgba(255,255,255,0.94);
+      padding: ${pad};
+      background: ${bg};
       color: #1e293b;
-      font-size: 12px;
-      font-weight: 600;
+      font-size: ${fontSize}px;
+      font-weight: ${weight};
       line-height: 1.2;
       border-radius: 999px;
       white-space: nowrap;
       pointer-events: none;
-      box-shadow: 0 2px 8px rgba(15,23,42,0.18), 0 0 0 1px rgba(100,116,139,0.25);
+      box-shadow: 0 2px 8px rgba(15,23,42,0.2), 0 0 0 1.5px ${accent};
       letter-spacing: 0.01em;
     "><span style="
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #6366f1;
+      background: ${accent};
       flex-shrink: 0;
     "></span>${name}</div>`,
     iconSize: [0, 0],
     iconAnchor: [0, 0],
   });
+}
+
+function createLabelIcon(name: string, color: string) {
+  return plateIcon("corridor-label", name, color, { fontSize: 11, weight: 700 });
+}
+
+function createHighwayLabelIcon(name: string) {
+  return plateIcon("highway-label", name, "#64748b", {
+    fontSize: 10,
+    weight: 600,
+    pad: "2px 9px 2px 7px",
+  });
+}
+
+function createAgglomerationIcon(name: string) {
+  return plateIcon("agglomeration-label", name, "#6366f1", { fontSize: 12 });
 }
 
 function getMidpoint(points: { lat: number; lng: number }[]): [number, number] {
@@ -699,21 +682,11 @@ function CoverageAnalysisLayer({
       }
 
       const label = L.marker([(minLat + maxLat) / 2, (minLng + maxLng) / 2], {
-        icon: L.divIcon({
-          className: "void-label",
-          html: `<div style="
-              padding: 2px 8px;
-              background: rgba(217,119,6,0.85);
-              color: white;
-              font-size: 10px;
-              font-weight: 700;
-              border-radius: 4px;
-              white-space: nowrap;
-              box-shadow: 0 1px 6px rgba(0,0,0,0.3);
-              border: 1.5px solid rgba(255,255,255,0.9);
-            ">${vz.name}</div>`,
-          iconSize: [0, 0],
-          iconAnchor: [0, 0],
+        icon: plateIcon("void-label", vz.name, "#d97706", {
+          fontSize: 10,
+          weight: 700,
+          bg: "rgba(255,251,235,0.96)",
+          pad: "3px 10px 3px 8px",
         }),
         interactive: false,
       });
@@ -745,21 +718,11 @@ function CoverageAnalysisLayer({
       const maxLng = Math.max(...lngs);
 
       const label = L.marker([(minLat + maxLat) / 2, (minLng + maxLng) / 2], {
-        icon: L.divIcon({
-          className: "duplication-label",
-          html: `<div style="
-              padding: 2px 8px;
-              background: rgba(168,85,247,0.85);
-              color: white;
-              font-size: 10px;
-              font-weight: 700;
-              border-radius: 4px;
-              white-space: nowrap;
-              box-shadow: 0 1px 6px rgba(0,0,0,0.3);
-              border: 1.5px solid rgba(255,255,255,0.9);
-            ">${dz.name}</div>`,
-          iconSize: [0, 0],
-          iconAnchor: [0, 0],
+        icon: plateIcon("duplication-label", dz.name, "#a855f7", {
+          fontSize: 10,
+          weight: 700,
+          bg: "rgba(250,245,255,0.96)",
+          pad: "3px 10px 3px 8px",
         }),
         interactive: false,
       });
