@@ -1178,8 +1178,10 @@ export default function MapClient({ centers }: MapClientProps) {
         </div>
 
         <div
-          className={`overflow-hidden transition-all duration-300 ease-in-out ${
-            layersCollapsed ? "max-h-0" : "max-h-[3500px]"
+          className={`transition-all duration-300 ease-in-out ${
+            layersCollapsed
+              ? "max-h-0 overflow-hidden"
+              : "max-h-[calc(100vh-10rem)] overflow-y-auto overscroll-contain"
           }`}
         >
           <div className="p-5">
@@ -1298,9 +1300,12 @@ export default function MapClient({ centers }: MapClientProps) {
                   <Activity className="h-3.5 w-3.5" />
                   Статус
                 </h3>
-                <div className="space-y-2 mb-3">
+                <div className="flex flex-col gap-2 mb-3">
                   {["Действующий", "Строится", "Проект"].map((status) => {
                     const isActive = selectedStatuses.has(status);
+                    const count = centers.filter(
+                      (c) => c.status === status
+                    ).length;
                     const statusColor =
                       status === "Действующий"
                         ? "#22c55e"
@@ -1308,36 +1313,39 @@ export default function MapClient({ centers }: MapClientProps) {
                           ? "#f59e0b"
                           : "#94a3b8";
                     return (
-                      <label
+                      <button
                         key={status}
-                        className="flex items-center gap-2.5 cursor-pointer select-none group"
+                        type="button"
+                        aria-pressed={isActive}
+                        onClick={() => toggleStatus(status)}
+                        className={`flex items-center gap-2.5 w-full rounded-lg border px-2.5 py-1.5 text-left transition-colors ${
+                          isActive
+                            ? "bg-white shadow-sm"
+                            : "bg-transparent opacity-60 hover:opacity-100"
+                        }`}
+                        style={{
+                          borderColor: isActive ? statusColor : "#e2e8f0",
+                        }}
                       >
-                        <input
-                          type="checkbox"
-                          checked={isActive}
-                          onChange={() => toggleStatus(status)}
-                          className="sr-only"
-                        />
                         <span
-                          className={`w-4 h-4 rounded border-2 flex-shrink-0 transition-colors ${
-                            isActive
-                              ? "border-transparent"
-                              : "border-muted-foreground/30"
-                          }`}
+                          className="w-3 h-3 rounded-full flex-shrink-0"
                           style={{
                             backgroundColor: isActive
                               ? statusColor
                               : "transparent",
+                            border: `2px solid ${statusColor}`,
                           }}
                         />
-                        <span
-                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: statusColor }}
-                        />
-                        <span className="text-xs font-medium text-foreground/80 group-hover:text-foreground transition-colors">
+                        <span className="flex-1 text-xs font-medium text-foreground/80">
                           {status}
                         </span>
-                      </label>
+                        <span className="text-[11px] tabular-nums text-muted-foreground">
+                          {count}
+                        </span>
+                        <span className="text-[10px] font-semibold text-muted-foreground w-7 text-right">
+                          {isActive ? "вкл" : "выкл"}
+                        </span>
+                      </button>
                     );
                   })}
                 </div>
