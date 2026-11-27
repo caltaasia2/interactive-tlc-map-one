@@ -58,6 +58,9 @@ export default function RootLayout({
           </div>
         </header>
         <main className="relative flex-1 min-h-0">{children}</main>
+        <footer className="shrink-0 h-6 flex items-center justify-center border-t bg-background text-[11px] text-muted-foreground">
+          © {new Date().getFullYear()} {appName}
+        </footer>
         <Toaster richColors position="top-right" />
       </body>
     </html>
