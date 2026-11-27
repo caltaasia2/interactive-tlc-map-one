@@ -911,7 +911,7 @@ export default function MapClient({ centers }: MapClientProps) {
   );
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] w-full relative">
+    <div className="absolute inset-0">
       <MapContainer
         center={[48.0, 68.0]}
         zoom={5}
@@ -1181,7 +1181,7 @@ export default function MapClient({ centers }: MapClientProps) {
           className={`transition-all duration-300 ease-in-out ${
             layersCollapsed
               ? "max-h-0 overflow-hidden"
-              : "max-h-[calc(100vh-10rem)] overflow-y-auto overscroll-contain"
+              : "max-h-[calc(100dvh-12rem)] overflow-y-auto overscroll-contain"
           }`}
         >
           <div className="p-5">
