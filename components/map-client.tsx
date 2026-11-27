@@ -440,7 +440,11 @@ function AgglomerationLabels({ visible }: { visible: boolean }) {
 
 function getCorridorNodes(
   centers: TlcCenter[],
-  _corridors: { id: string; points: { lat: number; lng: number }[] }[]
+  _corridors: {
+    id: string;
+    points: { lat: number; lng: number }[];
+    branches?: { lat: number; lng: number }[][];
+  }[]
 ): Map<string, TlcCenter[]> {
   const result = new Map<string, TlcCenter[]>();
   for (const c of _corridors) {
@@ -448,7 +452,10 @@ function getCorridorNodes(
   }
   for (const center of centers) {
     for (const corridor of _corridors) {
-      for (const point of corridor.points) {
+      for (const point of [
+        ...corridor.points,
+        ...(corridor.branches?.flat() ?? []),
+      ]) {
         const dist = Math.sqrt(
           (center.lat - point.lat) ** 2 + (center.lng - point.lng) ** 2
         );
@@ -1201,8 +1208,31 @@ export default function MapClient({ centers }: MapClientProps) {
                     {corridor.name}
                   </Tooltip>
                 </Polyline>
+                {corridor.branches?.map((branch, bi) => (
+                  <Polyline
+                    key={`${corridor.id}-branch-${bi}`}
+                    positions={branch.map((p) => [p.lat, p.lng])}
+                    pathOptions={{
+                      color: corridor.color,
+                      weight: mapMode === "corridor" ? 5 : 3.5,
+                      opacity: mapMode === "corridor" ? 0.95 : 0.85,
+                    }}
+                  >
+                    <Tooltip
+                      direction="top"
+                      className="rounded-lg border shadow-lg px-3 py-1.5 text-sm font-semibold"
+                      permanent={false}
+                    >
+                      {corridor.name}
+                    </Tooltip>
+                  </Polyline>
+                ))}
                 <Marker
-                  position={getMidpoint(corridor.points)}
+                  position={
+                    corridor.labelPoint
+                      ? [corridor.labelPoint.lat, corridor.labelPoint.lng]
+                      : getMidpoint(corridor.points)
+                  }
                   icon={createLabelIcon(corridor.name, corridor.color)}
                   interactive={false}
                 />
