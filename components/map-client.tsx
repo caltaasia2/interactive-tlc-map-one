@@ -272,6 +272,109 @@ function getMidpoint(points: { lat: number; lng: number }[]): [number, number] {
   return [points[mid].lat, points[mid].lng];
 }
 
+// ---------- Параллельные линии коридоров ----------
+interface LaneLine {
+  key: string;
+  corridorId: string;
+  points: { lat: number; lng: number }[];
+}
+
+function distToSegmentDeg(
+  p: { lat: number; lng: number },
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number }
+) {
+  const k = Math.cos((p.lat * Math.PI) / 180);
+  const px = p.lng * k,
+    py = p.lat;
+  const ax = a.lng * k,
+    ay = a.lat;
+  const bx = b.lng * k,
+    by = b.lat;
+  const dx = bx - ax,
+    dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  let t = len2 === 0 ? 0 : ((px - ax) * dx + (py - ay) * dy) / len2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+
+function distToPolylineDeg(
+  p: { lat: number; lng: number },
+  poly: { lat: number; lng: number }[]
+) {
+  let best = Infinity;
+  for (let i = 0; i < poly.length - 1; i++) {
+    best = Math.min(best, distToSegmentDeg(p, poly[i], poly[i + 1]));
+  }
+  return best;
+}
+
+/** Для каждой вершины линии: номер «полосы» среди линий, идущих рядом */
+function computeLanes(lines: LaneLine[]): Map<string, number[]> {
+  const result = new Map<string, number[]>();
+  for (const line of lines) {
+    const lanes = line.points.map((p) => {
+      const group = lines.filter(
+        (o) =>
+          o === line ||
+          (o.corridorId !== line.corridorId &&
+            distToPolylineDeg(p, o.points) < 0.12)
+      );
+      const rank = group.indexOf(line);
+      return rank - (group.length - 1) / 2;
+    });
+    result.set(line.key, lanes);
+  }
+  return result;
+}
+
+/** Сдвигает линию в пикселях экрана перпендикулярно направлению */
+function offsetLine(
+  points: { lat: number; lng: number }[],
+  lanes: number[],
+  zoom: number,
+  stepPx: number
+): [number, number][] {
+  const crs = L.CRS.EPSG3857;
+  const pts = points.map((p) => crs.latLngToPoint(L.latLng(p.lat, p.lng), zoom));
+  const sm = lanes.map(
+    (v, i) =>
+      (lanes[Math.max(0, i - 1)] + 2 * v + lanes[Math.min(lanes.length - 1, i + 1)]) / 4
+  );
+  return pts.map((pt, i) => {
+    const a = pts[Math.max(0, i - 1)];
+    const b = pts[Math.min(pts.length - 1, i + 1)];
+    let tx = b.x - a.x;
+    let ty = b.y - a.y;
+    const len = Math.hypot(tx, ty) || 1;
+    tx /= len;
+    ty /= len;
+    // единое направление, чтобы встречные линии не менялись местами
+    if (Math.abs(tx) >= Math.abs(ty) * 0.5 ? tx < 0 : ty < 0) {
+      tx = -tx;
+      ty = -ty;
+    }
+    const o = sm[i] * stepPx;
+    const q = L.point(pt.x - ty * o, pt.y + tx * o);
+    const ll = crs.pointToLatLng(q, zoom);
+    return [ll.lat, ll.lng] as [number, number];
+  });
+}
+
+function ZoomWatcher({ onZoom }: { onZoom: (z: number) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    onZoom(map.getZoom());
+    const handler = () => onZoom(map.getZoom());
+    map.on("zoomend", handler);
+    return () => {
+      map.off("zoomend", handler);
+    };
+  }, [map, onZoom]);
+  return null;
+}
+
 const typeColors: Record<string, string> = {
   П1: "#ef4444",
   П2: "#3b82f6",
@@ -751,6 +854,7 @@ export default function MapClient({ centers }: MapClientProps) {
   const [showCorridors, setShowCorridors] = useState(true);
   const [showHighways, setShowHighways] = useState(true);
   const [showCityLabels, setShowCityLabels] = useState(true);
+  const [mapZoom, setMapZoom] = useState(5);
   const [hiddenCorridors, setHiddenCorridors] = useState<Set<string>>(
     new Set()
   );
@@ -983,6 +1087,35 @@ export default function MapClient({ centers }: MapClientProps) {
       ),
     [corridorNodes, hiddenCorridors]
   );
+
+  const corridorLines = useMemo(() => {
+    const lines: LaneLine[] = [];
+    for (const c of transportCorridors) {
+      if (hiddenCorridors.has(c.id)) continue;
+      lines.push({ key: c.id, corridorId: c.id, points: c.points });
+      (c.branches ?? []).forEach((b, bi) =>
+        lines.push({ key: `${c.id}-b${bi}`, corridorId: c.id, points: b })
+      );
+    }
+    return { lines, lanes: computeLanes(lines) };
+  }, [hiddenCorridors]);
+
+  const corridorPositions = useMemo(() => {
+    const stepPx = (mapMode === "corridor" ? 5 : 3.5) + 1;
+    const out = new Map<string, [number, number][]>();
+    for (const line of corridorLines.lines) {
+      out.set(
+        line.key,
+        offsetLine(
+          line.points,
+          corridorLines.lanes.get(line.key) ?? [],
+          mapZoom,
+          stepPx
+        )
+      );
+    }
+    return out;
+  }, [corridorLines, mapZoom, mapMode]);
   const corridorColorMap = useMemo(
     () => new Map(transportCorridors.map((c) => [c.id, c.color])),
     []
@@ -1005,6 +1138,7 @@ export default function MapClient({ centers }: MapClientProps) {
         <DensityLayer visible={showDensityEffective} />
         <GdpLayer visible={showGdpEffective} />
         <WarehouseLayer visible={showWarehouseChoropleth} />
+        <ZoomWatcher onZoom={setMapZoom} />
         <AgglomerationLabels visible={showAgglomerations} />
         <HighwayLayer visible={showHighwaysEffective} />
         {showTLCsInCartogram &&
@@ -1168,7 +1302,10 @@ export default function MapClient({ centers }: MapClientProps) {
             {visibleCorridors.map((corridor) => (
               <Fragment key={corridor.id}>
                 <Polyline
-                  positions={corridor.points.map((p) => [p.lat, p.lng])}
+                  positions={
+                    corridorPositions.get(corridor.id) ??
+                    corridor.points.map((p) => [p.lat, p.lng] as [number, number])
+                  }
                   pathOptions={{
                     color: corridor.color,
                     weight: mapMode === "corridor" ? 5 : 3.5,
@@ -1186,7 +1323,10 @@ export default function MapClient({ centers }: MapClientProps) {
                 {corridor.branches?.map((branch, bi) => (
                   <Polyline
                     key={`${corridor.id}-branch-${bi}`}
-                    positions={branch.map((p) => [p.lat, p.lng])}
+                    positions={
+                      corridorPositions.get(`${corridor.id}-b${bi}`) ??
+                      branch.map((p) => [p.lat, p.lng] as [number, number])
+                    }
                     pathOptions={{
                       color: corridor.color,
                       weight: mapMode === "corridor" ? 5 : 3.5,
