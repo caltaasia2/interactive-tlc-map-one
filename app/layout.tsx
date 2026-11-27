@@ -28,9 +28,9 @@ export default function RootLayout({
       className={cn("font-sans", geist.variable)}
       suppressHydrationWarning
     >
-      <body className="antialiased min-h-screen bg-background flex flex-col">
+      <body className="antialiased h-dvh overflow-hidden bg-background flex flex-col">
         <BridgeProvider />
-        <header className="sticky top-0 z-50 w-full gradient-hero shadow-lg shadow-black/10">
+        <header className="relative shrink-0 z-50 w-full gradient-hero shadow-lg shadow-black/10">
           <div className="container mx-auto px-4 h-14 sm:h-16 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2 sm:gap-3">
               <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl overflow-hidden shrink-0">
@@ -57,12 +57,7 @@ export default function RootLayout({
             </Badge>
           </div>
         </header>
-        <main className="flex-1">{children}</main>
-        <footer className="border-t">
-          <div className="container mx-auto px-4 py-6 text-center text-xs text-muted-foreground">
-            © {new Date().getFullYear()} {appName}
-          </div>
-        </footer>
+        <main className="relative flex-1 min-h-0">{children}</main>
         <Toaster richColors position="top-right" />
       </body>
     </html>
