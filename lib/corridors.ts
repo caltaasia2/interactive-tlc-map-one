@@ -371,8 +371,7 @@ export const highways: Highway[] = [
       { lat: 55.1, lng: 69.4 },
     ],
   },
-  
-    {
+  {
     id: "transsib",
     name: "Северный / Транссиб",
     color: "#16a34a",
@@ -404,8 +403,8 @@ export const highways: Highway[] = [
       { lat: 50.43, lng: 80.27 },
     ],
     labelPoint: { lat: 52.6, lng: 62.4 },
+    ],
   },
-  
   {
     id: "a2",
     name: "A-2 (Алматы — Шымкент — Ташкент)",
