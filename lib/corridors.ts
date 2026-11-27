@@ -172,7 +172,7 @@ export const transportCorridors: TransportCorridor[] = [
   {
     id: "western",
     name: "Западный коридор",
-    color: "#d97706",
+    color: "#db2777",
     points: [
       { lat: 51.23, lng: 51.37 },
       { lat: 51.0, lng: 52.5 },
