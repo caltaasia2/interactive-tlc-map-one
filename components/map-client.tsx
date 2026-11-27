@@ -920,6 +920,7 @@ export default function MapClient({ centers }: MapClientProps) {
         className="h-full w-full"
         scrollWheelZoom={true}
         zoomControl={true}
+        attributionControl={false}
         style={{ background: "#f0f4f8" }}
       >
         <BaseMapLayer baseMap={baseMap} />
@@ -1178,7 +1179,7 @@ export default function MapClient({ centers }: MapClientProps) {
         </div>
 
         <div
-          className={`transition-all duration-300 ease-in-out ${
+          className={`relative transition-all duration-300 ease-in-out ${
             layersCollapsed
               ? "max-h-0 overflow-hidden"
               : "max-h-[calc(100dvh-12rem)] overflow-y-auto overscroll-contain"
