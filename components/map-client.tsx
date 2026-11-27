@@ -61,6 +61,7 @@ import {
   MapIcon,
   GitBranch,
   PieChart,
+  Tag,
 } from "lucide-react";
 
 type MapMode = "overview" | "corridor" | "cartogram";
@@ -255,19 +256,29 @@ function createAgglomerationIcon(name: string) {
   return new L.DivIcon({
     className: "agglomeration-label",
     html: `<div style="
-      padding: 3px 12px;
-      background: rgba(30,41,59,0.75);
-      backdrop-filter: blur(4px);
-      color: white;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      width: max-content;
+      transform: translate(-50%, -50%);
+      padding: 4px 11px 4px 9px;
+      background: rgba(255,255,255,0.94);
+      color: #1e293b;
       font-size: 12px;
-      font-weight: 700;
-      border-radius: 6px;
+      font-weight: 600;
+      line-height: 1.2;
+      border-radius: 999px;
       white-space: nowrap;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      border: 1px solid rgba(255,255,255,0.2);
-      letter-spacing: 0.03em;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-    ">${name}</div>`,
+      pointer-events: none;
+      box-shadow: 0 2px 8px rgba(15,23,42,0.18), 0 0 0 1px rgba(100,116,139,0.25);
+      letter-spacing: 0.01em;
+    "><span style="
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #6366f1;
+      flex-shrink: 0;
+    "></span>${name}</div>`,
     iconSize: [0, 0],
     iconAnchor: [0, 0],
   });
@@ -776,6 +787,7 @@ export default function MapClient({ centers }: MapClientProps) {
   );
   const [showCorridors, setShowCorridors] = useState(true);
   const [showHighways, setShowHighways] = useState(true);
+  const [showCityLabels, setShowCityLabels] = useState(true);
   const [hiddenCorridors, setHiddenCorridors] = useState<Set<string>>(
     new Set()
   );
@@ -808,7 +820,7 @@ export default function MapClient({ centers }: MapClientProps) {
   const showCorridorsEffective =
     mapMode === "corridor" ? true : mapMode === "overview" && showCorridors;
   const showHighwaysEffective = mapMode === "overview" && showHighways;
-  const showAgglomerations = mapMode === "overview";
+  const showAgglomerations = mapMode === "overview" && showCityLabels;
   const showBorderCrossings =
     (mapMode === "overview" && showCorridors) || mapMode === "corridor";
   const showWarehouseChoropleth = mapMode === "cartogram";
@@ -1535,6 +1547,32 @@ export default function MapClient({ centers }: MapClientProps) {
                   <Route className="h-3.5 w-3.5 text-gray-500" />
                   <span className="text-xs font-semibold text-foreground/80 group-hover:text-foreground transition-colors">
                     Автомагистрали
+                  </span>
+                </label>
+
+                <label className="flex items-center gap-2.5 cursor-pointer select-none group mb-1 px-1 py-1 rounded-lg hover:bg-indigo-50/50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={showCityLabels}
+                    onChange={(e) => setShowCityLabels(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <span
+                    className={`w-4 h-4 rounded border-2 flex-shrink-0 transition-all duration-200 ${
+                      showCityLabels
+                        ? "border-transparent scale-110"
+                        : "border-muted-foreground/30"
+                    }`}
+                    style={{
+                      backgroundColor: showCityLabels ? "#6366f1" : "transparent",
+                      boxShadow: showCityLabels
+                        ? "0 0 8px rgba(99,102,241,0.4)"
+                        : "none",
+                    }}
+                  />
+                  <Tag className="h-3.5 w-3.5 text-indigo-500" />
+                  <span className="text-xs font-semibold text-foreground/80 group-hover:text-foreground transition-colors">
+                    Названия городов
                   </span>
                 </label>
 
